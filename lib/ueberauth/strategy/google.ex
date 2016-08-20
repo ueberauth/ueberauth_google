@@ -15,7 +15,7 @@ defmodule Ueberauth.Strategy.Google do
   def handle_request!(conn) do
     scopes = conn.params["scope"] || option(conn, :default_scope)
     opts = [ scope: scopes ]
-    if conn.params["state"], do: opts = Keyword.put(opts, :state, conn.params["state"])
+    opts = if conn.params["state"], do: Keyword.put(opts, :state, conn.params["state"]), else: opts
     opts = Keyword.put(opts, :redirect_uri, callback_url(conn))
 
     redirect!(conn, Ueberauth.Strategy.Google.OAuth.authorize_url!(opts))
@@ -26,7 +26,8 @@ defmodule Ueberauth.Strategy.Google do
   """
   def handle_callback!(%Plug.Conn{ params: %{ "code" => code } } = conn) do
     opts = [redirect_uri: callback_url(conn)]
-    token = Ueberauth.Strategy.Google.OAuth.get_token!([code: code], opts)
+    client = Ueberauth.Strategy.Google.OAuth.get_token!([code: code], opts)
+    token = client.token
 
     if token.access_token == nil do
       set_errors!(conn, [error(token.other_params["error"], token.other_params["error_description"])])
@@ -113,7 +114,8 @@ defmodule Ueberauth.Strategy.Google do
 
     # userinfo_endpoint from https://accounts.google.com/.well-known/openid-configuration
     path = "https://www.googleapis.com/oauth2/v3/userinfo"
-    resp = OAuth2.AccessToken.get(token, path)
+    client = OAuth2.Client.new([{:token,token}])
+    resp = OAuth2.Client.get(client, path)
 
     case resp do
       { :ok, %OAuth2.Response{status_code: 401, body: _body}} ->
