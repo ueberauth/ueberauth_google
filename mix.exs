@@ -25,7 +25,7 @@ defmodule UeberauthGoogle.Mixfile do
 
   defp deps do
     [{:ueberauth, "~> 0.4"},
-     {:oauth2, git: "https://github.com/scrogson/oauth2", branch: "0.9.0"},
+     {:oauth2, "~> 0.8.0"},
      {:ex_doc, "~> 0.3", only: :dev},
      {:earmark, ">= 0.0.0", only: :dev}]
   end
