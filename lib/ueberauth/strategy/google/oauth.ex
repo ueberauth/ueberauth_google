@@ -51,9 +51,10 @@ defmodule Ueberauth.Strategy.Google.OAuth do
   end
 
   def get_token!(params \\ [], opts \\ []) do
-    client = opts
-    |> client
-    |> OAuth2.Client.get_token!(params)
+    client =
+      opts
+      |> client
+      |> OAuth2.Client.get_token!(params)
     client.token
   end
 
