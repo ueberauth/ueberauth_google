@@ -12,17 +12,12 @@ defmodule Ueberauth.Strategy.Google do
   @doc """
   Handles initial request for Google authentication.
   """
+
+  # safe parameters are accepted from parameters
+  @safe_redirect_parameters ~w[scope hd approval_prompt prompt access_type state]a
+
   def handle_request!(conn) do
-    scopes = conn.params["scope"] || option(conn, :default_scope)
-
-    opts =
-      [ scope: scopes ]
-      |> with_optional(:hd, conn)
-      |> with_optional(:approval_prompt, conn)
-      |> with_optional(:access_type, conn)
-      |> with_param(:state, conn)
-      |> Keyword.put(:redirect_uri, callback_url(conn))
-
+    opts = redirect_options(conn)
     redirect!(conn, Ueberauth.Strategy.Google.OAuth.authorize_url!(opts))
   end
 
@@ -58,7 +53,7 @@ defmodule Ueberauth.Strategy.Google do
   def uid(conn) do
     uid_field =
       conn
-      |> option(:uid_field)
+      |> app_option(:uid_field)
       |> to_string
 
     conn.private.google_user[uid_field]
@@ -130,15 +125,21 @@ defmodule Ueberauth.Strategy.Google do
     end
   end
 
-  defp with_param(opts, key, conn) do
-    if value = conn.params[to_string(key)], do: Keyword.put(opts, key, value), else: opts
+  @doc false
+  defp redirect_options(conn) do
+    safe_opts = @safe_redirect_parameters
+                |> Enum.map(fn key ->
+                  {key, conn.params[to_string(key)] || app_option(conn, key)}
+                end)
+                |> Enum.filter(&(elem(&1, 1)))
+
+    Keyword.put([], :scope, app_option(conn, :default_scope))
+    |> Keyword.merge(safe_opts)
+    |> Keyword.put(:redirect_uri, callback_url(conn))
   end
 
-  defp with_optional(opts, key, conn) do
-    if option(conn, key), do: Keyword.put(opts, key, option(conn, key)), else: opts
-  end
-
-  defp option(conn, key) do
+  defp app_option(conn, key) do
     Dict.get(options(conn), key, Dict.get(default_options(), key))
   end
+
 end
