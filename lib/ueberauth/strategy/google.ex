@@ -9,6 +9,8 @@ defmodule Ueberauth.Strategy.Google do
   alias Ueberauth.Auth.Credentials
   alias Ueberauth.Auth.Extra
 
+  @allowed_client_ids Application.get_env(:ueberauth, Ueberauth.Strategy.Google.OAuth)[:allowed_client_ids]
+
   @doc """
   Handles initial request for Google authentication.
   """
@@ -39,6 +41,19 @@ defmodule Ueberauth.Strategy.Google do
       set_errors!(conn, [error(token.other_params["error"], token.other_params["error_description"])])
     else
       fetch_user(conn, token)
+    end
+  end
+
+  @doc """
+  Handles the callback from app.
+  """
+  def handle_callback!(%Plug.Conn{params: %{"id_token" => id_token}} = conn) do
+    client = Ueberauth.Strategy.Google.OAuth.client
+    case verify_token(conn, client, id_token) do
+      {:ok, user} ->
+        put_user(conn, user)
+      {:error, reason} ->
+        set_errors!(conn, [error("token", reason)])
     end
   end
 
@@ -133,6 +148,12 @@ defmodule Ueberauth.Strategy.Google do
     end
   end
 
+  defp put_user(conn, user) do
+    token = %OAuth2.AccessToken{}
+    conn = put_private(conn, :google_token, token)
+    put_private(conn, :google_user, user)
+  end
+
   defp with_param(opts, key, conn) do
     if value = conn.params[to_string(key)], do: Keyword.put(opts, key, value), else: opts
   end
@@ -143,5 +164,24 @@ defmodule Ueberauth.Strategy.Google do
 
   defp option(conn, key) do
     Keyword.get(options(conn), key, Keyword.get(default_options(), key))
+  end
+
+  def verify_token(conn, client, id_token) do
+    url = "https://www.googleapis.com/oauth2/v3/tokeninfo"
+    params = %{"id_token" => id_token}
+    resp = OAuth2.Client.get(client, url, [], params: params)
+
+    case resp do
+      {:ok, %OAuth2.Response{status_code: 200,
+        body: %{"aud" => aud} = body
+      }} ->
+        if Enum.member?(@allowed_client_ids, aud) do
+          {:ok, body}
+        else
+          {:error, "Unknown client id"}
+        end
+      _ ->
+        {:error, "Token verification failed"}
+    end
   end
 end
