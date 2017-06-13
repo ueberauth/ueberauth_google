@@ -218,7 +218,7 @@ defmodule Ueberauth.Strategy.Google do
         if Enum.member?(@allowed_client_ids, aud) do
           {:ok, body}
         else
-          {:error, "Passed client id is disallowed"}
+          {:error, "Unknown client id"}
         end
       _ ->
         {:error, "Token verification failed"}
