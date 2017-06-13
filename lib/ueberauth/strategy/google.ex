@@ -9,6 +9,8 @@ defmodule Ueberauth.Strategy.Google do
   alias Ueberauth.Auth.Credentials
   alias Ueberauth.Auth.Extra
 
+  @allowed_client_ids Application.get_env(:ueberauth, Ueberauth.Strategy.Google.OAuth)[:allowed_client_ids]
+
   @doc """
   Handles initial request for Google authentication.
   """
@@ -45,14 +47,13 @@ defmodule Ueberauth.Strategy.Google do
   @doc """
   Handles the callback from app.
   """
-  def handle_callback!(%Plug.Conn{params: %{"access_token" => access_token}} = conn) do
+  def handle_callback!(%Plug.Conn{params: %{"id_token" => id_token}} = conn) do
     client = Ueberauth.Strategy.Google.OAuth.client
-    token = OAuth2.AccessToken.new(access_token)
-
-    if check_access_token(conn, client, token) do
-      fetch_user(conn, token)
-    else
-      set_errors!(conn, [error("token", "Token verification failed")])
+    case verify_token(conn, client, id_token) do
+      {:ok, user} ->
+        put_user(conn, user)
+      {:error, reason} ->
+        set_errors!(conn, [error("token", reason)])
     end
   end
 
@@ -147,6 +148,10 @@ defmodule Ueberauth.Strategy.Google do
     end
   end
 
+  defp put_user(conn, user) do
+    put_private(conn, :google_user, user)
+  end
+
   defp with_param(opts, key, conn) do
     if value = conn.params[to_string(key)], do: Keyword.put(opts, key, value), else: opts
   end
@@ -159,19 +164,22 @@ defmodule Ueberauth.Strategy.Google do
     Keyword.get(options(conn), key, Keyword.get(default_options(), key))
   end
 
-  def check_access_token(conn, client, token) do
-    client_id = client.client_id
-    params = %{
-      "access_token" => token.access_token
-    }
+  def verify_token(conn, client, id_token) do
     url = "https://www.googleapis.com/oauth2/v3/tokeninfo"
-    case OAuth2.Client.get(client, url, [], params: params) do
-      {:ok, %OAuth2.Response{
-        status_code: 200,
-        body: %{"aud" => ^client_id}
-      }} -> true
-      _ -> false
+    params = %{"id_token" => id_token}
+    resp = OAuth2.Client.get(client, url, [], params: params)
 
+    case resp do
+      {:ok, %OAuth2.Response{status_code: 200,
+        body: %{"aud" => aud} = body
+      }} ->
+        if Enum.member?(@allowed_client_ids, aud) do
+          {:ok, body}
+        else
+          {:error, "Passed client id is disallowed"}
+        end
+      _ ->
+        {:error, "Token verification failed"}
     end
   end
 end
