@@ -178,6 +178,8 @@ defmodule Ueberauth.Strategy.Google do
   end
   
   defp put_user(conn, user) do
+    token = %OAuth2.AccessToken{}
+    conn = put_private(conn, :google_token, token)
     put_private(conn, :google_user, user)
   end
 
