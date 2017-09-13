@@ -7,6 +7,13 @@ defmodule Ueberauth.Strategy.Google.OAuth do
   config :ueberauth, Ueberauth.Strategy.Google.OAuth,
     client_id: System.get_env("GOOGLE_APP_ID"),
     client_secret: System.get_env("GOOGLE_APP_SECRET")
+
+  If you are using a release management package like Distillery and want to set
+  the environment variables at runtime add `client_id_env` and
+  `client_secret_env` to your configuration:
+
+  config :ueberauth, Ueberauth.Strategy.Google.OAuth,
+    client_id_env: "GOOGLE_APP_ID",
   """
   use OAuth2.Strategy
 
@@ -27,12 +34,12 @@ defmodule Ueberauth.Strategy.Google.OAuth do
   def client(opts \\ []) do
     config = Application.get_env(:ueberauth, Ueberauth.Strategy.Google.OAuth)
 
-    opts =
-      @defaults
-      |> Keyword.merge(config)
-      |> Keyword.merge(opts)
-
-    OAuth2.Client.new(opts)
+    @defaults
+    |> Keyword.merge(config)
+    |> set_field_from_env(:client_id, :client_id_env, "GOOGLE_CLIENT_ID")
+    |> set_field_from_env(:client_secret, :client_secret_env, "GOOGLE_CLIENT_SECRET")
+    |> Keyword.merge(opts)
+    |> OAuth2.Client.new
   end
 
   @doc """
@@ -74,5 +81,20 @@ defmodule Ueberauth.Strategy.Google.OAuth do
     |> put_param("client_secret", client.client_secret)
     |> put_header("Accept", "application/json")
     |> OAuth2.Strategy.AuthCode.get_token(params, headers)
+  end
+
+  defp set_field_from_env(config, field, env_field, default_field) do
+    env_name = config[env_field]
+
+    cond do
+      env_name == true && System.get_env(default_field) ->
+        Keyword.merge(config, [{field, System.get_env(default_field)}])
+
+      System.get_env(env_name) ->
+        Keyword.merge(config, [{field, System.get_env(env_name)}])
+
+      true ->
+        config
+    end
   end
 end
