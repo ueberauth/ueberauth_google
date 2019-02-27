@@ -146,5 +146,9 @@ defmodule Ueberauth.Strategy.Google do
 
   defp option(conn, key) do
     Keyword.get(options(conn), key, Keyword.get(default_options(), key))
+    |> resolve_value()
   end
+
+  defp resolve_value({m, f, a}) when is_atom(m) and is_atom(f), do: apply(m, f, a)
+  defp resolve_value(v), do: v
 end
