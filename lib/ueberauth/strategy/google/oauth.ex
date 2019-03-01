@@ -25,8 +25,8 @@ defmodule Ueberauth.Strategy.Google.OAuth do
   These options are only useful for usage outside the normal callback phase of Ueberauth.
   """
   def client(opts \\ []) do
-    config = Application.get_env(:ueberauth, __MODULE__) |> resolve_values()
-    opts = @defaults |> Keyword.merge(opts) |> Keyword.merge(config)
+    config = Application.get_env(:ueberauth, __MODULE__, [])
+    opts = @defaults |> Keyword.merge(opts) |> Keyword.merge(config) |> resolve_values()
     OAuth2.Client.new(opts)
   end
 
