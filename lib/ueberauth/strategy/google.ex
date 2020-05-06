@@ -9,8 +9,6 @@ defmodule Ueberauth.Strategy.Google do
   alias Ueberauth.Auth.Credentials
   alias Ueberauth.Auth.Extra
 
-  @allowed_client_ids Application.get_env(:ueberauth, Ueberauth.Strategy.Google.OAuth)[:allowed_client_ids]
-
   @doc """
   Handles initial request for Google authentication.
   """
@@ -166,7 +164,7 @@ defmodule Ueberauth.Strategy.Google do
     Keyword.get(options(conn), key, Keyword.get(default_options(), key))
   end
 
-  def verify_token(conn, client, id_token) do
+  def verify_token(_conn, client, id_token) do
     url = "https://www.googleapis.com/oauth2/v3/tokeninfo"
     params = %{"id_token" => id_token}
     resp = OAuth2.Client.get(client, url, [], params: params)
@@ -175,7 +173,7 @@ defmodule Ueberauth.Strategy.Google do
       {:ok, %OAuth2.Response{status_code: 200,
         body: %{"aud" => aud} = body
       }} ->
-        if Enum.member?(@allowed_client_ids, aud) do
+        if Enum.member?(allowed_client_ids(), aud) do
           {:ok, body}
         else
           {:error, "Unknown client id #{aud}"}
@@ -183,5 +181,9 @@ defmodule Ueberauth.Strategy.Google do
       _ ->
         {:error, "Token verification failed"}
     end
+  end
+
+  defp allowed_client_ids() do
+    Application.get_env(:ueberauth, Ueberauth.Strategy.Google.OAuth)[:allowed_client_ids]
   end
 end
