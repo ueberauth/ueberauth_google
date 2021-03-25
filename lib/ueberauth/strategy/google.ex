@@ -145,6 +145,7 @@ defmodule Ueberauth.Strategy.Google do
         set_errors!(conn, [error("OAuth2", status_code)])
 
       {:error, %OAuth2.Error{reason: reason}} ->
+        IO.inspect(resp)
         set_errors!(conn, [error("OAuth2", reason)])
     end
   end
