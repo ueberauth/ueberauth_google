@@ -84,7 +84,9 @@ defmodule Ueberauth.Strategy.GoogleTest do
   end
 
   test "handle_callback! assigns required fields on successful auth", %{csrf_state: csrf_state, csrf_conn: csrf_conn} do
-    conn = conn(:get, "/auth/google/callback", %{code: "success_code", state: csrf_state}) |> set_csrf_cookies(csrf_conn)
+    conn =
+      conn(:get, "/auth/google/callback", %{code: "success_code", state: csrf_state}) |> set_csrf_cookies(csrf_conn)
+
     routes = Ueberauth.init([])
     assert %Plug.Conn{assigns: %{ueberauth_auth: auth}} = Ueberauth.call(conn, routes)
     assert auth.credentials.token == "success_token"
@@ -102,28 +104,36 @@ defmodule Ueberauth.Strategy.GoogleTest do
   end
 
   test "userinfo is fetched according to userinfo_endpoint", %{csrf_state: csrf_state, csrf_conn: csrf_conn} do
-    conn = conn(:get, "/auth/google/callback", %{code: "userinfo_code", state: csrf_state}) |> set_csrf_cookies(csrf_conn)
+    conn =
+      conn(:get, "/auth/google/callback", %{code: "userinfo_code", state: csrf_state}) |> set_csrf_cookies(csrf_conn)
+
     routes = Ueberauth.init() |> set_options(conn, userinfo_endpoint: "example.com/shaggy")
     assert %Plug.Conn{assigns: %{ueberauth_auth: auth}} = Ueberauth.call(conn, routes)
     assert auth.info.name == "Norville Rogers"
   end
 
   test "userinfo can be set via runtime config with default", %{csrf_state: csrf_state, csrf_conn: csrf_conn} do
-    conn = conn(:get, "/auth/google/callback", %{code: "userinfo_code", state: csrf_state}) |> set_csrf_cookies(csrf_conn)
+    conn =
+      conn(:get, "/auth/google/callback", %{code: "userinfo_code", state: csrf_state}) |> set_csrf_cookies(csrf_conn)
+
     routes = Ueberauth.init() |> set_options(conn, userinfo_endpoint: {:system, "NOT_SET", "example.com/shaggy"})
     assert %Plug.Conn{assigns: %{ueberauth_auth: auth}} = Ueberauth.call(conn, routes)
     assert auth.info.name == "Norville Rogers"
   end
 
   test "userinfo uses default library value if runtime env not found", %{csrf_state: csrf_state, csrf_conn: csrf_conn} do
-    conn = conn(:get, "/auth/google/callback", %{code: "userinfo_code", state: csrf_state}) |> set_csrf_cookies(csrf_conn)
+    conn =
+      conn(:get, "/auth/google/callback", %{code: "userinfo_code", state: csrf_state}) |> set_csrf_cookies(csrf_conn)
+
     routes = Ueberauth.init() |> set_options(conn, userinfo_endpoint: {:system, "NOT_SET"})
     assert %Plug.Conn{assigns: %{ueberauth_auth: auth}} = Ueberauth.call(conn, routes)
     assert auth.info.name == "Velma Dinkley"
   end
 
   test "userinfo can be set via runtime config", %{csrf_state: csrf_state, csrf_conn: csrf_conn} do
-    conn =  conn(:get, "/auth/google/callback", %{code: "userinfo_code", state: csrf_state}) |> set_csrf_cookies(csrf_conn)
+    conn =
+      conn(:get, "/auth/google/callback", %{code: "userinfo_code", state: csrf_state}) |> set_csrf_cookies(csrf_conn)
+
     routes = Ueberauth.init() |> set_options(conn, userinfo_endpoint: {:system, "UEBERAUTH_SCOOBY_DOO"})
     System.put_env("UEBERAUTH_SCOOBY_DOO", "example.com/scooby")
     assert %Plug.Conn{assigns: %{ueberauth_auth: auth}} = Ueberauth.call(conn, routes)
