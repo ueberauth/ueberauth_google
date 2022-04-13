@@ -24,6 +24,8 @@ defmodule Ueberauth.Strategy.Google do
       |> with_param(:prompt, conn)
       |> with_param(:state, conn)
       |> Keyword.put(:redirect_uri, callback_url(conn))
+#     Add for fix webView auth
+      |> Keyword.put(:ack_webview_shutdown, "2021-09-30")
 
     redirect!(conn, Ueberauth.Strategy.Google.OAuth.authorize_url!(opts))
   end
