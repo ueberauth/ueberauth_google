@@ -43,7 +43,7 @@ defmodule Ueberauth.Strategy.GoogleTest do
     do: {:error, %OAuth2.Response{body: %{"error" => "some error", "error_description" => "something went wrong"}}}
 
   def oauth2_get_token(_client, code: "error_response_no_description"),
-    do: {:error, %OAuth2.Response{body: %{"error" => "some error"}}}
+    do: {:error, %OAuth2.Response{body: %{"error" => "internal_failure"}}}
 
   def oauth2_get(%{token: %{access_token: "success_token"}}, _url, _, _),
     do: response(%{"sub" => "1234_fred", "name" => "Fred Jones", "email" => "fred_jones@example.com"})
@@ -195,7 +195,7 @@ defmodule Ueberauth.Strategy.GoogleTest do
       assert %Plug.Conn{assigns: %{ueberauth_failure: failure}} = Ueberauth.call(conn, routes)
 
       assert %Ueberauth.Failure{
-               errors: [%Ueberauth.Failure.Error{message: "", message_key: "some error"}]
+               errors: [%Ueberauth.Failure.Error{message: "", message_key: "internal_failure"}]
              } = failure
     end
   end
