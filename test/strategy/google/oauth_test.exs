@@ -1,5 +1,5 @@
 defmodule Ueberauth.Strategy.Google.OAuthTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias Ueberauth.Strategy.Google.OAuth
 
