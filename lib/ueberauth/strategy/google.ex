@@ -52,9 +52,16 @@ defmodule Ueberauth.Strategy.Google do
     end
   end
 
+  @doc """
+  Handles the callback for Google client side flow.
+  """
+  def handle_callback!(%Plug.Conn{params: %{"token" => token}} = conn) do
+    fetch_user(conn, OAuth2.AccessToken.new(token))
+  end
+
   @doc false
   def handle_callback!(conn) do
-    set_errors!(conn, [error("missing_code", "No code received")])
+    set_errors!(conn, [error("missing_code_or_token", "No code or token received")])
   end
 
   @doc false
@@ -134,7 +141,7 @@ defmodule Ueberauth.Strategy.Google do
     resp = Ueberauth.Strategy.Google.OAuth.get(token, get_userinfo_endpoint(conn))
 
     case resp do
-      {:ok, %OAuth2.Response{status_code: 401, body: _body}} ->
+      {:error, %OAuth2.Response{status_code: 401, body: _body}} ->
         set_errors!(conn, [error("token", "unauthorized")])
 
       {:ok, %OAuth2.Response{status_code: status_code, body: user}}
