@@ -9,7 +9,7 @@ defmodule UeberauthGoogle.Mixfile do
       app: :ueberauth_google,
       version: @version,
       name: "Üeberauth Google",
-      elixir: "~> 1.8",
+      elixir: ">= 1.14.4 and < 2.0.0",
       start_permanent: Mix.env() == :prod,
       package: package(),
       deps: deps(),
@@ -19,14 +19,15 @@ defmodule UeberauthGoogle.Mixfile do
 
   def application do
     [
-      extra_applications: [:logger, :oauth2, :ueberauth]
+      extra_applications: [:logger],
+      mod: {UeberauthGoogle.Application, []}
     ]
   end
 
   defp deps do
     [
-      {:oauth2, "~> 1.0 or ~> 2.0"},
-      {:ueberauth, "~> 0.10.0"},
+      {:ueberauth_oidcc, "~> 0.3"},
+      {:ueberauth, "~> 0.10.1"},
       {:credo, ">= 0.0.0", only: [:dev, :test], runtime: false},
       {:ex_doc, ">= 0.0.0", only: [:dev], runtime: false},
       {:mock, "~> 0.3", only: :test}
